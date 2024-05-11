@@ -5,9 +5,18 @@
 #include <string.h>
 #include <stdint.h>
 
-/* Define constants */
+/* Define macros and constants */
 #define COLUMN_USERNAME_SIZE 32
 #define COLUMN_EMAIL_SIZE 225
+#define attribute_size(Struct, Attribute) sizeof(((Struct *)0)->Attribute)
+
+const uint32_t ID_SIZE = attribute_size(Row, id);
+const uint32_t USERNAME_SIZE = attribute_size(Row, username);
+const uint32_t EMAIL_SIZE = attribute_size(Row, email);
+const uint32_t ID_OFFSET = 0;
+const uint32_t USERNAME_OFFSET = ID_OFFSET + ID_SIZE;
+const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + USERNAME_SIZE;
+const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 
 /* Define an enum for meta command results */
 typedef enum
@@ -96,6 +105,22 @@ MetaCommandResult do_meta_command(InputBuffer *input_buffer)
         exit(EXIT_SUCCESS);
     else
         return META_COMMAND_UNRECOGNIZED;
+}
+
+/* Serializes a row */
+void serialize_row(Row *source, void *destination)
+{
+    memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
+    memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
+    memcpy(destination + EMAIL_OFFSET, &(source->email), EMAIL_SIZE);
+}
+
+/* Deserializes a row */
+void deserialize_row(void *source, Row *destination)
+{
+    memcpy(&(destination->id), source + ID_OFFSET, ID_SIZE);
+    memcpy(&(destination->username), source + USERNAME_OFFSET, USERNAME_SIZE);
+    memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
 /* Prepares SQL statement */
