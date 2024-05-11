@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
+
+/* Define constants */
+#define COLUMN_USERNAME_SIZE 32
+#define COLUMN_EMAIL_SIZE 225
 
 /* Define an enum for meta command results */
 typedef enum
@@ -15,6 +20,7 @@ typedef enum
 typedef enum
 {
     PREPARE_SUCCESS,
+    PREPARE_SYNTAX_ERROR,
     PREPARE_UNRECOGNIZED
 } PrepareResult;
 
@@ -24,6 +30,14 @@ typedef enum
     STATEMENT_INSERT,
     STATEMENT_SELECT
 } StatementType;
+
+/* Define a struct for rows */
+typedef struct
+{
+    uint32_t id;
+    char username[COLUMN_USERNAME_SIZE];
+    char email[COLUMN_EMAIL_SIZE];
+} Row;
 
 /* Define a struct for the default input buffer */
 typedef struct
@@ -37,6 +51,7 @@ typedef struct
 typedef struct
 {
     StatementType type;
+    Row row_to_insert; // only used for insertions
 } Statement;
 
 /* Instantiate a new input buffer */
@@ -89,6 +104,14 @@ PrepareResult prepare_statement(InputBuffer *input_buffer, Statement *statement)
     if (strncmp(input_buffer->buffer, "insert", 6) == 0)
     { // Use strncmp() since insert will be followed by data
         statement->type = STATEMENT_INSERT;
+        int args_assigned = sscanf(
+            input_buffer->buffer, "insert %d %s %s", &(statement->row_to_insert.id),
+            statement->row_to_insert.username,
+            statement->row_to_insert.email);
+        if (args_assigned < 3)
+        {
+            return PREPARE_SYNTAX_ERROR;
+        }
         return PREPARE_SUCCESS;
     }
     if (strcmp(input_buffer->buffer, "select") == 0)
